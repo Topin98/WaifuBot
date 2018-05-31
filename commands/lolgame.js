@@ -4,7 +4,7 @@ const riotRequest = new RiotRequest(config.apilol);
 
 exports.run = (client, message, args, sql) => {
 
-    if (args.length != 0){
+    /*if (args.length != 0){
 
         var invocador = args.join(" ");
 
@@ -19,5 +19,7 @@ exports.run = (client, message, args, sql) => {
 
     } else {
         message.channel.send("Introduzca un invocador");
-    }
+    }*/
+
+    message.channel.send("Not yet implemented");
 }
