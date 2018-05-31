@@ -4,7 +4,7 @@ const config = require("./config.json");
 const fs = require("fs");
 
 const sql = require("sqlite");
-sql.open("./score.sqlite");
+sql.open("./files/score.sqlite");
 
 fs.readdir("./events/", (err, files) => {
   if (err) return console.error(err);
