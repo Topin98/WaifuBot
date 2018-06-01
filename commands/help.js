@@ -1,5 +1,5 @@
 const Discord = require("discord.js");
-var separacion = "--------------------------------------------------"; //50 (sry)
+const separacion = "--------------------------------------------------"; //50 (sry)
 
 exports.run = (client, message, args, sql) => {
 
