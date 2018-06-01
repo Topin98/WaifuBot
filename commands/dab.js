@@ -17,5 +17,8 @@ exports.run = (client, message, args, sql) => {
             message.channel.send("Demasiado dab man");
 
         }
+    } else {
+
+        message.channel.send("Introduce un número o no hay dab man");
     }
 }
