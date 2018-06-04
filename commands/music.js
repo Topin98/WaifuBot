@@ -52,7 +52,7 @@ function anyadirCancion(message, args, sql){
 
         yt.getInfo(args[1], (err, info) => {
             //si el link es valido
-			if(!err) {
+            if(!err) {
 
                 //insertamos la cancion
                 sql.run("INSERT INTO music (link, titulo, autor) VALUES (?, ?, ?)", [args[1],  generarTitulo(args[2]),  generarAutor(args[3])]).then(() => {
@@ -243,7 +243,7 @@ function play(message, songs) {
 
         let collector = message.channel.createCollector(m => m);
 
-        collector.on('message', m => {
+        collector.on('collect', m => {
 
             if (m.content == config.prefix + "music skip"){
                dispatcher.end();
