@@ -28,10 +28,6 @@ exports.run = (client, message, args, sql) => {
                 break;
             case "undefined": obtenerCanciones(message, args, sql);
                 break;
-            case "join": meterseCanal(message);
-                break;
-            case "leave": salirseCanal(message);
-                break;
             case "play": reproducirCanciones(message, args, sql);
                 break;
             case "stop": //estos dos aqui no hacen nada, los almacena el collector
