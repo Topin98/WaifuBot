@@ -242,7 +242,13 @@ function meterseCanal(message){
 }
 
 function salirseCanal(message){
-    message.member.voiceChannel.leave();
+    const voiceChannel = message.member.voiceChannel;
+
+    if (!voiceChannel || voiceChannel.type !== 'voice'){ 
+        message.channel.send("No me he podido salir del chat de voz");
+    } else {
+        message.member.voiceChannel.leave();   
+    }
 }
 
 function reproducirCanciones(message, args, sql){
