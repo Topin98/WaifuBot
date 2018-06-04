@@ -77,7 +77,7 @@ function anyadirCancion(message, args, sql){
 
 function proponerCancion(message, args, sql){
 
-    //length de 4 (new, link)
+    //length de 2 (new, link)
     if (args.length == 2){
 
         yt.getInfo(args[1], (err, info) => {
@@ -96,7 +96,7 @@ function proponerCancion(message, args, sql){
             } else {
                 message.channel.send("El link no es válido, no se ha insertado la canción");
             }
-		});
+        });
         //si no es que el formato no es correcto
     } else {
         message.channel.send("El formato no es correcto, no se ha insertado la canción");
@@ -247,7 +247,8 @@ function salirseCanal(message){
 
 function reproducirCanciones(message, args, sql){
 
-    //si el bot no esta metido en el canal se mete (se vuelve a llamar a la funcion reproducirCanciones pero ya no entraria por este if)
+    //si el bot no esta metido en el canal se mete en el que esta el usuario que manda el mensaje
+    //(se vuelve a llamar a la funcion reproducirCanciones pero ya no entraria por este if)
     if (!message.guild.voiceConnection) {
         meterseCanal(message, args, sql).then(() => reproducirCanciones(message, args, sql));
 
