@@ -1,6 +1,6 @@
 //-------------------------------------------------------------------------------------------------
-//TODO: IMPORTANTE: Se requiere usar el comando "music" antes de empezar a usar la base de datos
-//para que la tabla music se cree
+//TODO: IMPORTANTE: Se requiere usar el comando "music" antes de empezar a usar el resto de comandos
+//para que las tabla music y musica se creen
 //-------------------------------------------------------------------------------------------------
 
 const Discord = require("discord.js");
@@ -21,6 +21,8 @@ exports.run = (client, message, args, sql) => {
             case "delete": 
                 if (isRoot(message.author.id)) eliminarCancion(message, args, sql);
                 else message.channel.send(errorPermisos);
+                break;
+            case "new":  proponerCancion(message, args, sql);
                 break;
             case "search": buscarCanciones(message, args, sql);
                 break;
@@ -56,6 +58,34 @@ function anyadirCancion(message, args, sql){
 
                 //insertamos la cancion
                 sql.run("INSERT INTO music (link, titulo, autor) VALUES (?, ?, ?)", [args[1],  generarTitulo(args[2]),  generarAutor(args[3])]).then(() => {
+
+                    message.channel.send("Se ha insertado la canción");
+                
+                }).catch(error => {
+                    message.channel.send("Esa canción ya se encuentra en la base de datos");
+                });
+        
+            } else {
+                message.channel.send("El link no es válido, no se ha insertado la canción");
+            }
+		});
+        //si no es que el formato no es correcto
+    } else {
+        message.channel.send("El formato no es correcto, no se ha insertado la canción");
+    }
+}
+
+function proponerCancion(message, args, sql){
+
+    //length de 4 (new, link)
+    if (args.length == 2){
+
+        yt.getInfo(args[1], (err, info) => {
+            //si el link es valido
+            if(!err) {
+
+                //insertamos la cancion
+                sql.run("INSERT INTO musica (link) VALUES (?)", [args[1]]).then(() => {
 
                     message.channel.send("Se ha insertado la canción");
                 
@@ -117,12 +147,16 @@ function eliminarCancion(message, args, sql){
 
         sql.run("DELETE FROM music WHERE link = (?)", [args[1]]).then((data) => {
 
-            //data.changes devuelve el numero de filas eliminadas
-            if (data.changes == 1){
-                message.channel.send("Se ha eliminado la canción");
-            } else {
-                message.channel.send("Esa canción no se encuentra en la base de datos");
-            }
+            sql.run("DELETE FROM musica WHERE link = (?)", [args[1]]).then((data2) => {
+            
+                //data.changes devuelve el numero de filas eliminadas
+                if (data.changes == 1 || data2.changes == 1){
+                    message.channel.send("Se ha eliminado la canción");
+                } else {
+                    message.channel.send("Esa canción no se encuentra en la base de datos");
+                }
+                
+            });
             
         });
 
@@ -143,7 +177,7 @@ function buscarCanciones(message, args, sql){
     var filtro = "%" + args.join(" ") + "%";
     sql.all("SELECT link, titulo, autor FROM music WHERE titulo LIKE ? OR autor LIKE ?", [filtro, filtro]).then(function(rows){
 
-        if (rows.length != 0) mostrarCanciones(message, rows);
+        if (rows.length != 0) mostrarCanciones(message, rows, null);
         else message.channel.send("No se han encontrado canciones en la base de datos");
 
     }).catch(function(err){
@@ -155,25 +189,42 @@ function obtenerCanciones(message, args, sql){
 
     sql.all("SELECT link, titulo, autor FROM music").then(function(rows){
 
-        if (rows.length != 0) mostrarCanciones(message, rows);
-        else message.channel.send("No se han encontrado canciones en la base de datos");
+        sql.all("SELECT link FROM musica").then(function(rows2){
 
+            if (rows.length == 0 && rows2.length == 0) message.channel.send("No se han encontrado canciones en la base de datos");
+            else mostrarCanciones(message, rows, rows2);
+        });
+    
     }).catch(function(err){
 
         //si no hay base de datos la creamos y mostramos mensaje de que esta vacia
         sql.run("CREATE TABLE IF NOT EXISTS music (link TEXT PRIMARY KEY, titulo TEXT, autor TEXT)");
+        sql.run("CREATE TABLE IF NOT EXISTS musica (link TEXT PRIMARY KEY)");
 
-        message.channel.send("La tabla se acaba de crear por lo que no contiene ninguna canción");
+        message.channel.send("Las tablas se acaban de crear por lo que no contienen ninguna canción");
     });
 }
 
-function mostrarCanciones(message, rows){
+function mostrarCanciones(message, rows, rows2){
 
     var embed = new Discord.RichEmbed();
 
     rows.forEach(function (row) {
         embed.addField(row.titulo + " (" + row.autor + ")", row.link);
     });
+
+    //si hay canciones propuestas
+    if (rows2 != null && rows2.length != 0){
+
+        embed.addBlankField();
+
+        var mensaje = "";
+        rows2.forEach(function (row) {
+            mensaje += row.link + "\n";
+        });
+
+        embed.addField("Otras canciones", mensaje);
+    }
 
     message.channel.send({embed});
 }
@@ -206,8 +257,14 @@ function reproducirCanciones(message, args, sql){
 
             sql.all("SELECT link, titulo, autor FROM music").then(function(rows){
 
-                //la comprobacion de si tiene canciones la hacemos en la funcion play
-                play(message, rows);
+                sql.all("SELECT link FROM musica").then(function(rows2){
+
+                    //la comprobacion de si tiene canciones la hacemos en la funcion play
+                    play(message, rows.concat(rows2));
+            
+                }).catch(function(err){
+                    message.channel.send("No se han podido cargar las canciones (2)");
+                });
         
             }).catch(function(err){
                 message.channel.send("No se han podido cargar las canciones");
@@ -266,7 +323,7 @@ function play(message, songs) {
         });
 
         dispatcher.on('error', (err) => {
-            return message.channel.send("Error: " + err).then(() => {
+            message.channel.send("Error: " + err).then(() => {
                 collector.stop();
 
                 //quitamos la cancion que se intento reproducir
