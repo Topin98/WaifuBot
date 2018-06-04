@@ -72,6 +72,9 @@ client.on("message", message => {
 		});
 	});
 
+	//el bot siempre escucha lo que dices...
+	comprobarMensaje(message);
+
 	//si no empezo con el prefijo del bot no hacemos nada mas
 	if (message.content.indexOf(config.prefix) !== 0) return;
 
@@ -87,6 +90,15 @@ client.on("message", message => {
 		message.reply("Qué dices tonto");
 	}
 });
+
+function comprobarMensaje(message){
+	switch(message.content.toLowerCase()){
+		case "si": 
+		case "no":
+			message.reply(" frio");
+			break;
+	}
+}
 
 //evento que se lanza cuando se une un miembro al guild
 client.on("guildMemberAdd", (member) => {
