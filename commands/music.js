@@ -4,6 +4,9 @@
 //-------------------------------------------------------------------------------------------------
 
 const Discord = require("discord.js");
+const config = require("../config.json");
+const yt = require('ytdl-core');
+var Song = require("../entities/Song.js");
 const admins = ["285046427237744642", "446968489778085889"];
 const errorPermisos = "No tiene permisos para realizar esta acción";
 
@@ -23,6 +26,15 @@ exports.run = (client, message, args, sql) => {
                 break;
             case "undefined": obtenerCanciones(message, args, sql);
                 break;
+            case "join": meterseCanal(message);
+                break;
+            case "leave": salirseCanal(message);
+                break;
+            case "play": reproducirCanciones(message, args, sql);
+                break;
+            case "stop": //estos dos aqui no hacen nada, los almacena el collector
+            case "skip": //(estan aqui para que no se muestre el mensaje de que el comando no existe)
+                break;
             default: message.channel.send("Ese comando no existe");
                 break;
         }
@@ -38,14 +50,23 @@ function anyadirCancion(message, args, sql){
     //length de 4 (add, link, titulo, autor)
     if (args.length == 4){
 
-        sql.run("INSERT INTO music (link, titulo, autor) VALUES (?, ?, ?)", [args[1],  generarTitulo(args[2]),  generarAutor(args[3])]).then(() => {
+        yt.getInfo(args[1], (err, info) => {
+            //si el link es valido
+			if(!err) {
 
-            message.channel.send("Se ha insertado la canción");
-            
-        }).catch(error => {
-            message.channel.send("Esa canción ya se encuentra en la base de datos");
-        });
+                //insertamos la cancion
+                sql.run("INSERT INTO music (link, titulo, autor) VALUES (?, ?, ?)", [args[1],  generarTitulo(args[2]),  generarAutor(args[3])]).then(() => {
 
+                    message.channel.send("Se ha insertado la canción");
+                
+                }).catch(error => {
+                    message.channel.send("Esa canción ya se encuentra en la base de datos");
+                });
+        
+            } else {
+                message.channel.send("El link no es válido, no se ha insertado la canción");
+            }
+		});
         //si no es que el formato no es correcto
     } else {
         message.channel.send("El formato no es correcto, no se ha insertado la canción");
@@ -114,7 +135,10 @@ function eliminarCancion(message, args, sql){
 function buscarCanciones(message, args, sql){
 
     //borramos desde la posicion 0 un elemento (se borraria la palabra search)
-    args.splice(0,1);
+    //args.splice(0,1);
+
+    //quita el primer elemento del array (mejor usar esta forma)
+    args.shift();
 
     var filtro = "%" + args.join(" ") + "%";
     sql.all("SELECT link, titulo, autor FROM music WHERE titulo LIKE ? OR autor LIKE ?", [filtro, filtro]).then(function(rows){
@@ -152,4 +176,122 @@ function mostrarCanciones(message, rows){
     });
 
     message.channel.send({embed});
+}
+
+function meterseCanal(message){
+    return new Promise((resolve, reject) => {
+        const voiceChannel = message.member.voiceChannel;
+
+        if (!voiceChannel || voiceChannel.type !== 'voice'){ 
+            message.channel.send("No me he podido conectar al chat de voz");
+        } else {
+            voiceChannel.join().then(connection => resolve(connection)).catch(err => reject(err));
+        }
+    });
+}
+
+function salirseCanal(message){
+    message.member.voiceChannel.leave();
+}
+
+function reproducirCanciones(message, args, sql){
+
+    //si el bot no esta metido en el canal se mete (se vuelve a llamar a la funcion reproducirCanciones pero ya no entraria por este if)
+    if (!message.guild.voiceConnection) {
+        meterseCanal(message, args, sql).then(() => reproducirCanciones(message, args, sql));
+
+    } else {
+        //si la cancion es null es que hizo ";music play" por lo que recuperamos las canciones de la base de datos
+        if (args[1] == null) {
+
+            sql.all("SELECT link, titulo, autor FROM music").then(function(rows){
+
+                //la comprobacion de si tiene canciones la hacemos en la funcion play
+                play(message, rows);
+        
+            }).catch(function(err){
+                message.channel.send("No se han podido cargar las canciones");
+            });
+
+        } else {
+            
+            yt.getInfo(args[1], (err, info) => {
+
+                //si el link es valido
+                if(!err) {
+    
+                    //simula un array de tamaño 1 para reproducir la cancion
+                    play(message, simularArray(args[1]));
+            
+                } else {
+                    message.channel.send("El link no es válido, no se puede reproducir");
+                    salirseCanal(message);
+                }
+            });
+        }
+    }
+}
+
+function play(message, songs) {
+
+    if (songs.length > 0){
+
+        message.channel.send("Reproduciendo: " + songs[0].link);
+
+        //reproduce la cancion
+        let dispatcher = message.guild.voiceConnection.playStream(yt(songs[0].link, {audioonly: true}));
+
+        let collector = message.channel.createCollector(m => m);
+
+        collector.on('message', m => {
+
+            if (m.content == config.prefix + "music skip"){
+               dispatcher.end();
+            } else if (m.content == config.prefix + "music stop"){
+                //vaciamos el array para que acabe
+                songs.length = 0;
+
+                dispatcher.end();
+            }
+        });
+
+        dispatcher.on('end', () => {
+            collector.stop();
+            
+            //quitamos la cancion que se reprodujo
+            songs.shift();
+
+            //seguimos reproduciendo la lista
+            play(message, songs);
+        });
+
+        dispatcher.on('error', (err) => {
+            return message.channel.send("Error: " + err).then(() => {
+                collector.stop();
+
+                //quitamos la cancion que se intento reproducir
+                songs.shift();
+
+                //seguimos reproduciendo la lista
+                play(message, songs);
+            });
+        });
+
+    } else {
+        message.channel.send("No hay más canciones que reproducir");
+        salirseCanal(message);
+    }
+}
+
+function simularArray(link){
+
+    //objeto donde se va a guardar el link de la cancion
+    var song = new Song();
+
+    //guardamos el link
+    song.link = link;
+
+    //retornamos la cancion insertandola en un array
+    return [song];
+
 }
