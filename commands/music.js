@@ -4,21 +4,33 @@
 //-------------------------------------------------------------------------------------------------
 
 const Discord = require("discord.js");
+const admins = ["285046427237744642", "446968489778085889"];
+const errorPermisos = "No tiene permisos para realizar esta acción";
 
 exports.run = (client, message, args, sql) => {
 
-    //como no se puede comparar directamente con case null, lo pasamos a String para que coja el valor "undefined"
-    switch(String(args[0])){
-        case "add": anyadirCancion(message, args, sql);
-            break;
-        case "delete": eliminarCancion(message, args, sql);
-            break;
-        case "undefined": obtenerCanciones(message, args, sql);
-            break;
-        default: message.channel.send("Ese comando no existe");
-            break;
-    }
-    
+        //como no se puede comparar directamente con case null, lo pasamos a String para que coja el valor "undefined"
+        switch(String(args[0])){
+            case "add": 
+                if (isRoot(message.author.id)) anyadirCancion(message, args, sql);
+                else message.channel.send(errorPermisos);
+                break;
+            case "delete": 
+                if (isRoot(message.author.id)) eliminarCancion(message, args, sql);
+                else message.channel.send(errorPermisos);
+                break;
+            case "search": buscarCanciones(message, args, sql);
+                break;
+            case "undefined": obtenerCanciones(message, args, sql);
+                break;
+            default: message.channel.send("Ese comando no existe");
+                break;
+        }
+}
+
+function isRoot(id){
+    //si esta devuelve true, si no devuelve false
+    return admins.indexOf(id) != -1;
 }
 
 function anyadirCancion(message, args, sql){
@@ -69,7 +81,7 @@ function generarAutor(cadena){
         autor += cadena.charAt(i);
     }
 
-    //quitmaos el espacio en blanco del principio
+    //quitamos el espacio en blanco del principio
     return autor.substring(1);
 }
 
@@ -99,9 +111,24 @@ function eliminarCancion(message, args, sql){
     }
 }
 
+function buscarCanciones(message, args, sql){
+
+    //borramos desde la posicion 0 un elemento (se borraria la palabra search)
+    args.splice(0,1);
+
+    var filtro = "%" + args.join(" ") + "%";
+    sql.all("SELECT link, titulo, autor FROM music WHERE titulo LIKE ? OR autor LIKE ?", [filtro, filtro]).then(function(rows){
+
+        if (rows.length != 0) mostrarCanciones(message, rows);
+        else message.channel.send("No se han encontrado canciones en la base de datos");
+
+    }).catch(function(err){
+        message.channel.send("Se ha producido un error cargando las canciones");
+    });
+}
+
 function obtenerCanciones(message, args, sql){
 
-    //leemos de la base de datos la info del usuario que mando el mensaje
     sql.all("SELECT link, titulo, autor FROM music").then(function(rows){
 
         if (rows.length != 0) mostrarCanciones(message, rows);

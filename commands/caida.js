@@ -22,12 +22,6 @@ exports.run = (client, message, args, sql) => {
             case "tpm":
                 message.channel.send("ltpqnl acebal puedes parar de decir eso en algún momento de tu vida");
                 break;
-            case "joaquin":
-                message.channel.send("Forms es la clave pero nadie lo usa");
-                break;
-            case "priego":
-                message.channel.send("Estáis yendo a por pokemons quiero ir tambien");
-                break;
             case "kosmos":
                 message.channel.send("Ord... No se han encontrado registros de ese jugador");
                 break;
