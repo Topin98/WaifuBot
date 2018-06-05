@@ -10,6 +10,7 @@ exports.run = (client, message, args, sql) => {
         .addField(separacion, "**points** (Muestra los puntos y tu nivel actual)")
         .addField(separacion, "**49** *nombre* (Muestra la información del jugador)")
         .addField(separacion, "**caida** [*compadre*] (Indica dónde tienes que caer)")
+        .addField(separacion, "**invitar** *ID_usuario_a_invitar* (Manda por md una invitación del guild al usuario)")
         .addField(separacion, "**dab** *número* (Escribe un determinado número de dabs)")
         .addField(separacion, "**tamanio** (Hace spam de la aplicación de mierda de <@368721145806979072>)");
 
