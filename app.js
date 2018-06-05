@@ -100,25 +100,4 @@ function comprobarMensaje(message){
 	}
 }
 
-//evento que se lanza cuando se une un miembro al guild
-client.on("guildMemberAdd", (member) => {
-	try {
-		//mandamos un mensaje por el canal general
-		member.guild.channels.find("name", "general").send("Pero bueno " + member.user + " qué haces aquí compadre");
-	} catch(err){
-		console.log("No se ha podido mandar el mensaje. El canal \"general\" no existe");
-	}
-});
-
-//evento que se lanza cuando un miembro abandona el guild
-client.on("guildMemberRemove", (member) => {
-	try {
-		//mandamos un mensaje por el canal general
-		member.guild.channels.find("name", "general").send("Rip " + member.user);
-	} catch(err){
-		console.log("No se ha podido mandar el mensaje. El canal \"general\" no existe");
-	}
-});
-
-
 client.login(config.token);
