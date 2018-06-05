@@ -9,7 +9,6 @@ exports.run = (client, oldMember, newMember) => {
 
         //si alguien se mete en el canal de voz
         if(oldUserChannel === undefined && newUserChannel !== undefined) {
-
             //mandamos un mensaje por el canal general
             newMember.guild.channels.find("name", "general").send(newMember.user + " di argooo");
             
@@ -17,6 +16,16 @@ exports.run = (client, oldMember, newMember) => {
         } else if(newUserChannel === undefined){
             //mandamos un mensaje por el canal general
             newMember.guild.channels.find("name", "general").send(newMember.user + " se fue uwu");
+
+            //si alguien se mutea
+        } else if (oldMember.selfMute === false && newMember.selfMute === true) {
+            //mandamos un mensaje por el canal general
+            newMember.guild.channels.find("name", "general").send(newMember.user + " se fue a cagar");
+
+            //si alguien se desmutea
+        } else if (oldMember.selfMute === true && newMember.selfMute === false) {
+            //mandamos un mensaje por el canal general
+            newMember.guild.channels.find("name", "general").send(newMember.user + " volvió yayyy");
         }
 
     } catch (err){
