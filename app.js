@@ -34,8 +34,8 @@ fs.readdir("./events/", (err, files) => {
 
 client.on("message", message => {
 
-	//si es un bot o es un mensaje que no esta en un guild no hacemos nada
-	if (message.author.bot || message.channel.type !== "text") return;
+	//si es un bot no hacemos nada
+	if (message.author.bot) return;
 
 	//leemos de la base de datos la info del usuario que mando el mensaje
 	sql.get(`SELECT userId, points, level FROM scores WHERE userId = "${message.author.id}"`).then(row => {
@@ -81,9 +81,23 @@ client.on("message", message => {
 	const args = message.content.slice(config.prefix.length).trim().split(/ +/g);
 	const command = args.shift().toLowerCase();
 
+	var ruta; //directorio donde se va a buscar el script del comando
+
+	//si el mensaje esta en un guild
+	if (message.channel.type === "text"){
+		
+		ruta = "commands";
+
+		//si no es que lo mando por md
+	} else {
+		ruta = "privateCommands";
+	}
+
 	try {
-		let commandFile = require(`./commands/${command}.js`);
+		//ejecutamos el script de enviarMd
+		let commandFile = require(`./${ruta}/${command}.js`);
 		commandFile.run(client, message, args, sql);
+
 	} catch (err) {
 		console.info("Error controlado");
 		console.error(err);
